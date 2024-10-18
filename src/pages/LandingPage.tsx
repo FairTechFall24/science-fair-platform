@@ -4,7 +4,7 @@ import logo from '../assets/images/Southern_MN_Science_Fair_Logo.png';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const LandingPage: React.FC = () => {
-  const navigate = useNavigate(); // Initialize navigate function
+  const navigate = useNavigate(); // Initialize navigate function (test)
 
   return (
     <Box
