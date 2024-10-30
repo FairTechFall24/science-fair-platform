@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { CloudUpload as CloudUploadIcon } from '@mui/icons-material';
 import { useFileUpload } from '../../../hooks/useFileUpload';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const PaperworkContent: React.FC = () => {
   const {
@@ -20,12 +21,73 @@ const PaperworkContent: React.FC = () => {
     handleUpload,
   } = useFileUpload();
 
+  const navigate = useNavigate(); // Initialize useNavigate
+
+  const handleGoToQuestionnaire = () => {
+    navigate('/form-questionnaire'); // Navigate to the Form Questionnaire page
+  };
+
   return (
     <Box
       sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
     >
       <Typography variant="h4" gutterBottom>
-        Upload PDF
+        PaperWork
+      </Typography>
+
+      <Typography
+        variant="h5"
+        align="justify"
+        sx={{ marginTop: 1, width: '80%', maxWidth: '500px' }}
+      >
+        Not sure what documents you need? Complete the{' '}
+        <strong>Form Questionnaire</strong> to get a customized list.
+        <br />
+      </Typography>
+      <Typography
+        variant="h5"
+        align="center"
+        sx={{ marginTop: 1, width: '80%', maxWidth: '500px' }}
+      >
+        Click here to get the Form Questionnaire.
+        <br />
+        <br />
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleGoToQuestionnaire} // Add the onClick event
+          sx={{
+            backgroundColor: '#512da8',
+            marginRight: 2,
+            fontSize: '1.5rem',
+            padding: '12px 24px',
+            width: '50%',
+            height: '80px',
+            '&:hover': { backgroundColor: '#4527a0' },
+          }}
+        >
+          Form Questionnaire
+        </Button>
+      </Typography>
+      <br />
+      <Typography
+        variant="h5"
+        align="center"
+        sx={{ marginTop: 1, width: '80%', maxWidth: '500px' }}
+      >
+        If your project conditions have changed , you can retake the
+        questionnaire anytime by going to the Form Questionnaire under
+        paperwork. .
+      </Typography>
+      <br />
+      <br />
+      <Typography
+        variant="h5"
+        align="center"
+        sx={{ marginTop: 1, width: '80%', maxWidth: '500px' }}
+      >
+        To track the review status of your uploaded files, visit{' '}
+        <strong>My Documents</strong> under Paperwork.
       </Typography>
 
       <Box
@@ -53,8 +115,8 @@ const PaperworkContent: React.FC = () => {
               marginRight: 2,
               fontSize: '1.5rem',
               padding: '12px 24px',
-              width: '100%',
-              height: '100px',
+              width: '50%',
+              height: '70px',
               '&:hover': { backgroundColor: '#4527a0' },
             }}
           >
@@ -78,7 +140,12 @@ const PaperworkContent: React.FC = () => {
           variant="contained"
           onClick={handleUpload}
           disabled={!selectedFile || isUploading}
-          sx={{ backgroundColor: '#512da8', width: '100%', height: '60px' }}
+          sx={{
+            backgroundColor: '#512da8',
+            width: '100%',
+            height: '60px',
+            alignItems: 'center',
+          }}
         >
           {isUploading ? (
             <CircularProgress size={24} color="inherit" />
