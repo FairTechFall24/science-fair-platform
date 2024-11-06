@@ -9,7 +9,8 @@ import {
 } from '@mui/material';
 import { CloudUpload as CloudUploadIcon } from '@mui/icons-material';
 import { useFileUpload } from '../../../hooks/useFileUpload';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
+import { getAuth } from 'firebase/auth';
 
 const PaperworkContent: React.FC = () => {
   const {
@@ -21,10 +22,11 @@ const PaperworkContent: React.FC = () => {
     handleUpload,
   } = useFileUpload();
 
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
+  const auth = getAuth();
 
   const handleGoToQuestionnaire = () => {
-    navigate('/form-questionnaire'); // Navigate to the Form Questionnaire page
+    navigate('/form-questionnaire');
   };
 
   return (
@@ -55,7 +57,7 @@ const PaperworkContent: React.FC = () => {
         <Button
           variant="contained"
           color="primary"
-          onClick={handleGoToQuestionnaire} // Add the onClick event
+          onClick={handleGoToQuestionnaire}
           sx={{
             backgroundColor: '#512da8',
             marginRight: 2,
@@ -75,9 +77,9 @@ const PaperworkContent: React.FC = () => {
         align="center"
         sx={{ marginTop: 1, width: '80%', maxWidth: '500px' }}
       >
-        If your project conditions have changed , you can retake the
+        If your project conditions have changed, you can retake the
         questionnaire anytime by going to the Form Questionnaire under
-        paperwork. .
+        paperwork.
       </Typography>
       <br />
       <br />
@@ -89,6 +91,24 @@ const PaperworkContent: React.FC = () => {
         To track the review status of your uploaded files, visit{' '}
         <strong>My Documents</strong> under Paperwork.
       </Typography>
+
+      {!auth.currentUser && (
+        <Alert
+          severity="warning"
+          sx={{ marginTop: 4, width: '80%', maxWidth: '500px' }}
+        >
+          Please login to upload files.
+        </Alert>
+      )}
+
+      {auth.currentUser && !auth.currentUser.emailVerified && (
+        <Alert
+          severity="warning"
+          sx={{ marginTop: 4, width: '80%', maxWidth: '500px' }}
+        >
+          Please verify your email before uploading files.
+        </Alert>
+      )}
 
       <Box
         sx={{
@@ -139,7 +159,12 @@ const PaperworkContent: React.FC = () => {
         <Button
           variant="contained"
           onClick={handleUpload}
-          disabled={!selectedFile || isUploading}
+          disabled={
+            !selectedFile ||
+            isUploading ||
+            !auth.currentUser ||
+            !auth.currentUser.emailVerified
+          }
           sx={{
             backgroundColor: '#512da8',
             width: '100%',
