@@ -110,4 +110,12 @@ export const routeConfig: RouteConfigMap = {
       title: 'Super Admin Dashboard',
     },
   },
+  '/project-registration': {
+    requiredState: UserState.COMPLETE,
+    allowedRoles: ['student'],
+    fallbackRoute: '/login',
+    metadata: {
+      title: 'Project Registration',
+    },
+  },
 };

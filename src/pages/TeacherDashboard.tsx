@@ -1,6 +1,6 @@
-import React, { useState /*useRef*/ } from 'react';
-//import { doc, setDoc } from 'firebase/firestore';
-//import { db } from '../firebase';
+import React, { useEffect, useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import {
   Box,
   Typography,
@@ -19,13 +19,13 @@ import ScienceTestTubes from '../assets/images/ScienceTestTubes.png';
 import ScienceAtom from '../assets/images/ScienceAtom.png';
 import ScienceMicroscope from '../assets/images/ScienceMicroscope.png';
 import { useAuth } from '../contexts/AuthContext';
+import { getAuth } from 'firebase/auth';
 
 const ClassDashboard: React.FC = () => {
   const { authStatus } = useAuth();
-  const teacherName = authStatus.metadata?.lastName;
   //Initialize some Variables
+  const teacherName = authStatus.metadata?.lastName;
   const images = [ScienceTestTubes, ScienceAtom, ScienceMicroscope]; //List full of our images
-  const classCode = 'Y893-GH22'; //(Note: Will need to find a way to make a unique short class ID)
   const projects =
     //(Note: This will need to be data that is pulled from our DB)
     [
@@ -35,9 +35,9 @@ const ClassDashboard: React.FC = () => {
       { name: "Evan's Project", status: 'Inactive', id: 4 },
       { name: "Montana's Project", status: 'Inactive', id: 5 },
     ];
-  //const dialogRef = useRef<HTMLDialogElement>(null); //Reference for the dialog element for the pop-up window
 
   //Hooks
+  const [classCode, setClassCode] = useState('');
   const [projectsData, setProjectsData] = useState(projects); //Use state to manage project data
   const [showConfirmDialog, setShowConfirmDialog] = useState(false); //This controls weather our pop up window to confirm project removal is visable
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
@@ -65,6 +65,51 @@ const ClassDashboard: React.FC = () => {
     //Nothing Happens when cancelled + close confirmation dialog window
     setShowConfirmDialog(false);
   };
+
+  async function getClassCode() {
+    try {
+      // Get the currently authenticated user
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      // Check if user is authenticated
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      // Get the user's document using their UID
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      // Check if the document exists and has the classId field
+      if (userDoc.exists()) {
+        const classId = userDoc.data().classID;
+        if (classId) {
+          return classId;
+        } else {
+          throw new Error('No class code found for this user');
+        }
+      } else {
+        throw new Error('User document not found');
+      }
+    } catch (error) {
+      console.error('Error fetching class code:', error);
+      throw error;
+    }
+  }
+
+  useEffect(() => {
+    async function fetchClassCode() {
+      try {
+        const code = await getClassCode();
+        setClassCode(code);
+      } catch (error) {
+        console.error('Error fetching class code:', error);
+        throw error;
+      }
+    }
+    fetchClassCode();
+  }, []);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>

@@ -4,4 +4,5 @@ export interface Teacher {
   lastName: string;
   school: string;
   registrationDate: Date;
+  classID: string;
 }

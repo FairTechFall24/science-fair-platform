@@ -15,6 +15,7 @@ import {
 import { styled } from '@mui/system';
 import { useAuth } from '../contexts/AuthContext';
 import LogoutButton from '../components/LogoutButton';
+import generateUniqueClassID from '../lib/generateUniqueID';
 
 const validationSchema = Yup.object().shape({
   firstName: Yup.string().required('First name is required'),
@@ -69,9 +70,13 @@ const TeacherRegistration: React.FC = () => {
         throw new Error('User not authenticated');
       }
 
+      //Generate a random 6 char long class code
+      const classID = await generateUniqueClassID();
+
       const registrationData = {
         ...values,
         userType: 'teacher',
+        classID: classID,
       };
 
       await completeRegistration(registrationData);

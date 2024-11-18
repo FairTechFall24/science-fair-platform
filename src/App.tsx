@@ -18,6 +18,7 @@ import VolunteerDashboard from './pages/VolunteerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import LandingPage from './pages/LandingPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import ProjectRegistration from './pages/ProjectRegistration';
 
 function App() {
   return (
@@ -150,6 +151,15 @@ function App() {
             element={
               <AccessGuard>
                 <SuperAdminDashboard />
+              </AccessGuard>
+            }
+          />
+
+          <Route
+            path="/project-registration"
+            element={
+              <AccessGuard>
+                <ProjectRegistration />
               </AccessGuard>
             }
           />

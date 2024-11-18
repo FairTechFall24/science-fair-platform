@@ -21,12 +21,13 @@ import {
   FormControlLabel,
   Radio,
 } from '@mui/material';
-import { addDoc, collection /*doc, setDoc*/ } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { styled } from '@mui/system';
 //import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Project } from '../types/project.types';
+import checkTeacherClassExists from '../lib/verifyDocumentExistance';
 
 const validationSchema = Yup.object().shape({
   projectName: Yup.string().required('A Project name is required'),
@@ -37,7 +38,7 @@ const validationSchema = Yup.object().shape({
     'Adult Sponsor First name is required'
   ),
   classID: Yup.string().required('Teacher Class Code is required'),
-  fairID: Yup.string().required('Fair is required'),
+  //fairID: Yup.string().required('Fair is required'),
 });
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -78,6 +79,9 @@ const ProjectRegistration: React.FC = () => {
   );
   const [useClassCode, setUseClassCode] = useState<boolean>(false);
   const [useTeacherAsSponser, setTeacherAsSponser] = useState<boolean>(false);
+  const [verificationMessage, setVerificationMessage] =
+    useState('No Class Found');
+  const [isLoading, setIsLoading] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeStep, setActiveStep] = useState(0);
@@ -114,16 +118,16 @@ const ProjectRegistration: React.FC = () => {
 
       const projectData: Project = values;
 
-      const projectRef = await addDoc(collection(db, 'projects'), projectData);
+      // Generate a unique document ID
+      const documentId = Date.now().toString();
 
-      console.log('Document written with ID:', projectRef.id);
+      const projectRef = doc(db, 'projects', documentId);
 
-      // const projectRef = doc(db, 'projects');
-
-      // const registrationData = {
-      //   ...projectData,
-      // };
-      // await setDoc(projectRef, registrationData, { merge: true });
+      const registrationData = {
+        ...projectData,
+      };
+      await setDoc(projectRef, registrationData, { merge: true });
+      navigate('/project-dashboard');
     } catch (error) {
       console.error('Registration error:', error);
       setRegistrationError(
@@ -244,14 +248,61 @@ const ProjectRegistration: React.FC = () => {
                     </div>
 
                     {useClassCode && (
-                      <Field
-                        as={TextField}
-                        fullWidth
-                        name="classID"
-                        label="Enter Class Code"
-                        error={touched.classID && Boolean(errors.classID)}
-                        helperText={touched.classID && errors.classID}
-                      />
+                      <Box>
+                        <Field
+                          as={TextField}
+                          fullWidth
+                          name="classID"
+                          label="Enter Class Code"
+                          error={touched.classID && Boolean(errors.classID)}
+                          helperText={touched.classID && errors.classID}
+                          onChange={(e: { target: { value: any } }) => {
+                            const value = e.target.value;
+                            e.target.value = value; // Update the input value
+                            setFieldValue('classID', value); // Update Formik value
+
+                            if (value.length === 6) {
+                              setIsLoading(true);
+                              checkTeacherClassExists(value)
+                                .then((lastName) => {
+                                  if (lastName) {
+                                    setVerificationMessage(
+                                      'Class found, Teacher ' +
+                                        lastName +
+                                        "'s class!"
+                                    );
+                                  } else {
+                                    setVerificationMessage('No Class Found');
+                                  }
+                                })
+                                .catch((error) => {
+                                  console.error('Error verifying code:', error);
+                                  setVerificationMessage('Error checking code');
+                                })
+                                .finally(() => {
+                                  setIsLoading(false);
+                                });
+                            } else {
+                              setVerificationMessage('No Class Found');
+                            }
+                          }}
+                          inputProps={{
+                            maxLength: 6,
+                          }}
+                        />
+                        <div
+                          style={{
+                            marginTop: '25px',
+                            color:
+                              verificationMessage !== 'No Class Found'
+                                ? 'green'
+                                : 'red',
+                            textAlign: 'center',
+                          }}
+                        >
+                          {isLoading ? 'Checking code...' : verificationMessage}
+                        </div>
+                      </Box>
                     )}
                   </>
                 )}
