@@ -5,13 +5,9 @@ export interface Project {
   creationDate: Date;
   adultSponsorFirstName: string;
   adultSponsorLastName: string;
-  projectStatus?: {
-    status: string;
-    statusChangeDate: Date;
-  };
-  projectMembers?: {
-    member1: string;
-    member2: string;
-    member3: string;
-  };
+  projectStatus: string;
+  projectStatusChangeDate: Date;
+  projectMember1ID: string;
+  projectMember2ID: string;
+  projectMember3ID: string;
 }

@@ -24,10 +24,10 @@ import {
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { styled } from '@mui/system';
-//import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Project } from '../types/project.types';
-import checkTeacherClassExists from '../lib/verifyDocumentExistance';
+import { checkTeacherClassExists } from '../services/teacher.service';
 
 const validationSchema = Yup.object().shape({
   projectName: Yup.string().required('A Project name is required'),
@@ -61,19 +61,16 @@ interface RegistrationData {
   creationDate: Date;
   adultSponsorFirstName: string;
   adultSponsorLastName: string;
-  projectStatus?: {
-    status: string;
-    statusChangeDate: Date;
-  };
-  projectMembers?: {
-    member1: string;
-    member2: string;
-    member3: string;
-  };
+  projectStatus: string;
+  projectStatusChangeDate: Date;
+  projectMember1ID: string;
+  projectMember2ID: string;
+  projectMember3ID: string;
 }
 
 const ProjectRegistration: React.FC = () => {
   const navigate = useNavigate(); // Initialize navigate function
+  const { authStatus } = useAuth();
   const [registrationError, setRegistrationError] = useState<string | null>(
     null
   );
@@ -98,15 +95,11 @@ const ProjectRegistration: React.FC = () => {
     creationDate: new Date(), //todays date
     adultSponsorFirstName: '',
     adultSponsorLastName: '',
-    projectStatus: {
-      status: 'pending',
-      statusChangeDate: new Date(), //todays date
-    },
-    projectMembers: {
-      member1: 'n/a',
-      member2: 'n/a',
-      member3: 'n/a',
-    },
+    projectStatus: 'Paperwork Pending',
+    projectStatusChangeDate: new Date(), //todays date
+    projectMember1ID: authStatus.user?.uid as string,
+    projectMember2ID: 'n/a',
+    projectMember3ID: 'n/a',
   };
 
   const handleSubmit = async (

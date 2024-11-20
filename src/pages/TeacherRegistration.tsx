@@ -15,7 +15,7 @@ import {
 import { styled } from '@mui/system';
 import { useAuth } from '../contexts/AuthContext';
 import LogoutButton from '../components/LogoutButton';
-import generateUniqueClassID from '../lib/generateUniqueID';
+import { generateUniqueClassID } from '../services/teacher.service';
 
 const validationSchema = Yup.object().shape({
   firstName: Yup.string().required('First name is required'),

@@ -14,56 +14,72 @@ import {
   DialogActions,
 } from '@mui/material';
 //import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { getAuth } from 'firebase/auth';
+import {
+  getTeacherDashboardProjects,
+  removeClassCodeFromProject,
+} from '../services/project.services';
+
 //Import Image Assets
 import ScienceTestTubes from '../assets/images/ScienceTestTubes.png';
 import ScienceAtom from '../assets/images/ScienceAtom.png';
 import ScienceMicroscope from '../assets/images/ScienceMicroscope.png';
-import { useAuth } from '../contexts/AuthContext';
-import { getAuth } from 'firebase/auth';
 
 const ClassDashboard: React.FC = () => {
   const { authStatus } = useAuth();
   //Initialize some Variables
   const teacherName = authStatus.metadata?.lastName;
   const images = [ScienceTestTubes, ScienceAtom, ScienceMicroscope]; //List full of our images
-  const projects =
-    //(Note: This will need to be data that is pulled from our DB)
-    [
-      { name: "Kaden & Pedro's Project", status: 'Active', id: 1 },
-      { name: "Abi & Hawi's project", status: 'Active', id: 2 },
-      { name: "Rushit's Project", status: 'Active', id: 3 },
-      { name: "Evan's Project", status: 'Inactive', id: 4 },
-      { name: "Montana's Project", status: 'Inactive', id: 5 },
-    ];
 
   //Hooks
   const [classCode, setClassCode] = useState('');
-  const [projectsData, setProjectsData] = useState(projects); //Use state to manage project data
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false); //This controls weather our pop up window to confirm project removal is visable
-  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
+  const [reload, setReload] = useState(false); // State to trigger useEffect
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [showConfirmRemovalDialog, setShowConfirmRemovalDialog] =
+    useState(false); //This controls weather our pop up window to confirm project removal is visable
+  const [showProjectStatusDialog, setShowProjectStatusDialog] = useState(false); //This controls weather our pop up window to see project status is visable
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     null
   ); //This holds the ID of the project we want to delete (initialized to 'null' as at the begining there are no projects selected to be removed)
 
+  interface Project {
+    projectID: string;
+    projectName: string;
+    projectStatus: string;
+    projectMembers: string;
+  }
+
   //Methods
-  const handleRemoveProject = (projectId: number) => {
+  const handleRemoveProject = (projectId: string) => {
     //Show the confirmation dialog window
-    setShowConfirmDialog(true);
+    setShowConfirmRemovalDialog(true);
     setSelectedProjectId(projectId);
   };
 
   const handleConfirmRemove = () => {
-    //Remove the project with the given ID from the state
-    const updatedProjects = projectsData.filter(
-      (project) => project.id !== selectedProjectId
-    );
-    setProjectsData(updatedProjects);
+    //Remove the project with the given ID
+    removeClassCodeFromProject(selectedProjectId);
     //Close confirmation dialog window
-    setShowConfirmDialog(false);
+    setShowConfirmRemovalDialog(false);
+    // After updating the database, trigger the useEffect
+    setReload(!reload);
   };
 
   const handleCancelRemove = () => {
     //Nothing Happens when cancelled + close confirmation dialog window
-    setShowConfirmDialog(false);
+    setShowConfirmRemovalDialog(false);
+  };
+
+  const handleShowProjectStatus = (projectId: string) => {
+    //Show the confirmation dialog window
+    setShowProjectStatusDialog(true);
+    setSelectedProjectId(projectId);
+  };
+
+  const handleExitProjectStaus = () => {
+    //Nothing Happens when cancelled + close confirmation dialog window
+    setShowProjectStatusDialog(false);
   };
 
   async function getClassCode() {
@@ -108,8 +124,36 @@ const ClassDashboard: React.FC = () => {
         throw error;
       }
     }
+    async function loadProjects() {
+      try {
+        const userProjects = await getTeacherDashboardProjects(
+          await getClassCode()
+        );
+
+        //In case there is no classCode available, defualt to an empty list
+        if (!userProjects) {
+          console.log('No projects found');
+          setProjects([]);
+          return;
+        }
+
+        const resolvedProjects = await Promise.all(
+          userProjects.map(async (project) => ({
+            projectID: project.projectID,
+            projectName: project.projectName,
+            projectStatus: project.projectStatus,
+            projectMembers: await project.projectMembers,
+          }))
+        );
+        setProjects(resolvedProjects);
+      } catch (error) {
+        console.error('Failed to load projects:', error);
+      }
+    }
+
+    loadProjects();
     fetchClassCode();
-  }, []);
+  }, [reload]);
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
@@ -163,7 +207,7 @@ const ClassDashboard: React.FC = () => {
 
         {/* All Projects listed under the teacher's class*/}
         <List>
-          {projectsData.length === 0 ? ( //If there are no projects in the class project list, give a small message of encouragment
+          {projects.length === 0 ? ( //If there are no projects in the class project list, give a small message of encouragment
             <Typography variant="h5" align="center" sx={{ marginTop: '100px' }}>
               No Projects Currently in Your Class...
               <br />
@@ -171,49 +215,48 @@ const ClassDashboard: React.FC = () => {
             </Typography>
           ) : (
             //Else, there are at least 1 to many projects currently in the class project list
-            projectsData.map((project) => (
-              <ListItem key={project.id}>
+            projects.map((project, index) => (
+              <ListItem key={project.projectID}>
                 <img
-                  src={images[project.id % images.length]} //This will rotate through the images we have in our image list for UI Design for each row of projects in the table
+                  src={images[index % images.length]} //This will rotate through the images we have in our image list for UI Design for each row of projects in the table
                   style={{ width: '50px', height: 'auto' }}
                   alt=""
                 />
 
                 <ListItemText
-                  primary={project.name}
-                  secondary={project.status}
+                  primary={project.projectName}
+                  secondary={project.projectMembers}
                   style={{ marginLeft: '20px' }}
                 />
 
                 <Button
                   variant="contained"
                   sx={{ backgroundColor: '#ffffff', color: '#5a2b8c' }} //Need implemention to navigate to project dashboard
+                  onClick={() => handleShowProjectStatus(project.projectID)} // Show confirmation dialog
                 >
-                  View Project
+                  View Project Status
                 </Button>
 
                 <Button
                   variant="contained"
                   sx={{ backgroundColor: '#ffffff', color: '#d30000' }}
-                  onClick={() => handleRemoveProject(project.id)} // Show confirmation dialog
+                  onClick={() => handleRemoveProject(project.projectID)} // Show confirmation dialog
                 >
-                  Remove
+                  Remove Project
                 </Button>
               </ListItem>
             ))
           )}
         </List>
-
         {/* Confirmation dialog */}
-        <Dialog open={showConfirmDialog} onClose={handleCancelRemove}>
-          <DialogTitle>Confirm Removal</DialogTitle>
+        <Dialog open={showConfirmRemovalDialog} onClose={handleCancelRemove}>
+          <DialogTitle>Confirm Project Removal</DialogTitle>
           <DialogContent>
-            Are you sure you want to remove "
-            {
-              projectsData.find((project) => project.id === selectedProjectId)
-                ?.name
-            }
-            " from your class?
+            Are you sure you want to remove the "
+            {projects.find((project) => project.projectID === selectedProjectId)
+              ?.projectName ?? 'No project found'}
+            " Project from your class?
+            <br />
             <br />
             Please note this cannot be undone
           </DialogContent>
@@ -231,6 +274,28 @@ const ClassDashboard: React.FC = () => {
               onClick={handleCancelRemove}
             >
               No
+            </Button>
+          </DialogActions>
+        </Dialog>
+        {/* Project Status dialog */}
+        <Dialog open={showProjectStatusDialog} onClose={handleExitProjectStaus}>
+          <DialogTitle>Project Status</DialogTitle>
+          <DialogContent>
+            Project status of the "
+            {projects.find((project) => project.projectID === selectedProjectId)
+              ?.projectName ?? 'No project found'}
+            " Project:
+            <br />
+            {projects.find((project) => project.projectID === selectedProjectId)
+              ?.projectStatus ?? 'No project status found'}
+          </DialogContent>
+          <DialogActions>
+            <Button
+              variant="contained"
+              sx={{ backgroundColor: '#ffffff', color: '#8B0000' }}
+              onClick={handleExitProjectStaus}
+            >
+              Exit
             </Button>
           </DialogActions>
         </Dialog>

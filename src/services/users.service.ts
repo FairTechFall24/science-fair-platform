@@ -10,6 +10,8 @@ import {
   getDocs,
   QueryConstraint,
   DocumentData,
+  getFirestore,
+  getDoc,
 } from 'firebase/firestore';
 import { UserRole } from '../types/auth.types';
 
@@ -121,3 +123,44 @@ export const usersService = {
     return this.getUsersByRoleAndStatus(role, 'active');
   },
 };
+
+async function getDocumentById(collectionName: string, documentId: string) {
+  const db = getFirestore();
+
+  try {
+    // Get a reference to the document
+    const docRef = doc(db, collectionName, documentId);
+
+    // Fetch the document
+    const docSnap = await getDoc(docRef);
+
+    // Check if the document exists
+    if (docSnap.exists()) {
+      // Return document data
+      return {
+        ...docSnap.data(),
+      };
+    } else {
+      console.log('No such document exists!');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching document:', error);
+    throw error;
+  }
+}
+
+export async function getUsersFullName(userID: string) {
+  try {
+    const data = await getDocumentById('users', userID);
+
+    if (data === null) {
+      throw new Error(`User with ID ${userID} not found`);
+    }
+
+    return data.firstName + ' ' + data.lastName;
+  } catch (error) {
+    console.error('Error getting users full names:', error);
+    throw error;
+  }
+}
