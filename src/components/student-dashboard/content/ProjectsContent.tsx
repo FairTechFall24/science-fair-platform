@@ -71,17 +71,19 @@ const ProjectsContent: React.FC = () => {
   useEffect(() => {
     async function loadProjects() {
       try {
-        const userProjects =
-          (await getStudentDashboardProjects(authStatus.user?.uid)) ?? [];
-        const resolvedProjects = await Promise.all(
-          userProjects.map(async (project) => ({
-            projectID: project.projectID,
-            projectName: project.projectName,
-            projectStatus: project.projectStatus,
-            projectMembers: await project.projectMembers,
-          }))
-        );
-        setProjects(resolvedProjects);
+        if (authStatus.user?.uid) {
+          const userProjects =
+            (await getStudentDashboardProjects(authStatus.user?.uid)) ?? [];
+          const resolvedProjects = await Promise.all(
+            userProjects.map(async (project) => ({
+              projectID: project.projectID,
+              projectName: project.projectName,
+              projectStatus: project.projectStatus,
+              projectMembers: await project.projectMembers,
+            }))
+          );
+          setProjects(resolvedProjects);
+        }
       } catch (error) {
         console.error('Failed to load projects:', error);
       }
