@@ -90,7 +90,7 @@ const ProjectsContent: React.FC = () => {
     }
 
     loadProjects();
-  }, [reload]);
+  }, [reload, authStatus.user?.uid]);
 
   return (
     <>
