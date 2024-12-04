@@ -36,6 +36,9 @@ const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [passwordResetAlert, setPasswordResetAlert] = useState<string | null>(
+    null
+  );
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +60,10 @@ const UserManagement: React.FC = () => {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailContent, setEmailContent] = useState('');
   const [newPassword, setNewPassword] = useState('');
+
+  //Delay function
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
   useEffect(() => {
     const unsubscribe = usersService.subscribeToUsers((updatedUsers) => {
@@ -137,6 +144,32 @@ const UserManagement: React.FC = () => {
     handleMenuClose();
   };
 
+  const checkPasswordRequirements = (password: string) => {
+    let missingRequirementsMessage = 'The New Password must contain:';
+    if (password.length < 6) {
+      missingRequirementsMessage += '\n • At Least 6 Characters';
+    }
+    if (!/[A-Z]/.test(password)) {
+      missingRequirementsMessage += '\n • One Uppercase Letter';
+    }
+    if (!/[a-z]/.test(password)) {
+      missingRequirementsMessage += '\n • One Lower Letter';
+    }
+    if (!/\d/.test(password)) {
+      missingRequirementsMessage += '\n • One Number';
+    }
+    if (!/[^a-zA-Z0-9]/.test(password)) {
+      missingRequirementsMessage += '\n • One Special Character';
+    }
+
+    if (missingRequirementsMessage == 'The New Password must contain:') {
+      //Password has all requirements fullfilled
+      return null;
+    } else {
+      return missingRequirementsMessage;
+    }
+  };
+
   const handleActionConfirm = async () => {
     if (!currentAction) return;
 
@@ -155,13 +188,25 @@ const UserManagement: React.FC = () => {
           break;
         case 'resetPassword':
           if (!newPassword) {
-            setError('New password is required');
+            //Send alert message that input is required to reset password
+            setPasswordResetAlert('New password is required');
+            return;
+          }
+          //Check to see if our new password meets all password requirements
+          const requirementMessage = checkPasswordRequirements(newPassword);
+          //If there are changes to be made to the password, alert the user
+          if (requirementMessage != null) {
+            setPasswordResetAlert(requirementMessage);
             return;
           }
           await superAdminService.resetUserPassword(
             currentAction.userId,
             newPassword
           );
+          //Send alert message that resetting password was a success
+          setPasswordResetAlert('Success! Password Reset');
+          //Delay 3 sec so the user sees the alert message before dialog
+          await delay(3000);
           break;
         case 'delete':
           // Implement user deletion
@@ -170,6 +215,7 @@ const UserManagement: React.FC = () => {
 
       setActionDialogOpen(false);
       setCurrentAction(null);
+      setPasswordResetAlert(null);
       setNewPassword('');
     } catch (err) {
       setError('Failed to perform action. Please try again.');
@@ -360,6 +406,20 @@ const UserManagement: React.FC = () => {
             : `${currentAction?.type.charAt(0).toUpperCase()}${currentAction?.type.slice(1)} User`}
         </DialogTitle>
         <DialogContent>
+          {passwordResetAlert && (
+            <Box>
+              <Alert
+                severity={
+                  passwordResetAlert.includes('Success') ? 'success' : 'error'
+                }
+                sx={{ mb: 2 }}
+              >
+                <Typography sx={{ whiteSpace: 'pre-line' }}>
+                  {passwordResetAlert}
+                </Typography>
+              </Alert>
+            </Box>
+          )}
           <DialogContentText>
             {currentAction?.type === 'resetPassword'
               ? `Reset password for user: ${currentAction.userEmail}`
@@ -378,7 +438,15 @@ const UserManagement: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setActionDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setActionDialogOpen(false);
+              setPasswordResetAlert(null);
+              setNewPassword('');
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleActionConfirm}
             variant="contained"
