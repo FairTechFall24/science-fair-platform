@@ -162,7 +162,7 @@ const UserManagement: React.FC = () => {
       missingRequirementsMessage += '\n • One Special Character';
     }
 
-    if (missingRequirementsMessage == 'The New Password must contain:') {
+    if (missingRequirementsMessage === 'The New Password must contain:') {
       //Password has all requirements fullfilled
       return null;
     } else {
