@@ -89,7 +89,7 @@ const AccountSettingsContent: React.FC = () => {
           <Grid item xs={12}>
             <Button variant="contained" color="primary" sx={{ mr: 2 }}>
               {/* Not implemented */}
-              Update Password
+              Update Password!
             </Button>
           </Grid>
         </Grid>
