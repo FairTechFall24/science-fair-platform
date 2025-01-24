@@ -1,9 +1,11 @@
 # Southern MN Science Fair Platform
 
 ## Project Overview
+
 This web platform manages the Southern MN Science and Engineering Fair, handling paperwork, registration, judging, and reporting for events hosting several hundred students annually.
 
 ## Features
+
 - User registration and management (students, teachers, judges, administrators, volunteers)
 - Project submission and management
 - Document handling and review processes
@@ -11,6 +13,7 @@ This web platform manages the Southern MN Science and Engineering Fair, handling
 - Automated award determination and reporting
 
 ## Technology Stack
+
 - Frontend: React 18 with TypeScript
 - UI Library: Material-UI (MUI)
 - State Management: Redux Toolkit
@@ -18,6 +21,7 @@ This web platform manages the Southern MN Science and Engineering Fair, handling
 - Additional Libraries: Formik, Yup, React Query, date-fns, recharts
 
 ## Prerequisites
+
 - Node.js (v20 or later)
 - npm (v10 or later)
 - Git
@@ -26,27 +30,33 @@ This web platform manages the Southern MN Science and Engineering Fair, handling
 ## Setup Instructions
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/FairTechFall24/science-fair-platform
    cd science-fair-platform
    ```
 
 2. Install dependencies:
+
    ```
+   npm install
+   cd functions
    npm install
    ```
 
 3. Set up Firebase:
+
+   - Go back to the science-fair-platform directory: `cd ..`
    - Install Firebase CLI: `npm install -g firebase-tools`
    - Login to Firebase: `firebase login`
-   - cd into the functions directory and run npm install there as well.
 
-6. Start the development server:
+4. Start the development server:
    ```
    npm start
    ```
 
 ## Folder Structure
+
 ```
 src/
 ├── components/  # Reusable React components
@@ -60,6 +70,7 @@ src/
 ```
 
 ## Available Scripts
+
 - `npm start`: Runs the app in development mode
 - `npm test`: Launches the test runner
 - `npm run build`: Builds the app for production
@@ -70,5 +81,6 @@ src/
 - Install Prettier and Eslint extensions on Visual Studio Code.
 
 ## Deployment
+
 1. Build the project: `npm run build`
 2. Deploy to Firebase Hosting: `firebase deploy`
