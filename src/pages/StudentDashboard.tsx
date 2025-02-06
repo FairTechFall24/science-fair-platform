@@ -27,10 +27,21 @@ const StudentDashboard: React.FC = () => {
   }, [unsubscribeFunctions]);
 
   useEffect(() => {
+    // Cleanup function to unsubscribe from all subscriptions
+
+    return () => {
+      unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [unsubscribeFunctions]);
+
+  useEffect(() => {
     // Early return if there's no authenticated user
+
     if (!authStatus.user?.uid) {
       setPendingFormsCount(0);
+
       setNewFeedbackCount(0);
+
       return;
     }
 
@@ -39,19 +50,25 @@ const StudentDashboard: React.FC = () => {
     const loadCounts = async () => {
       try {
         // Unsubscribe from existing subscriptions
-        let unsubscribeFunctions: (() => void)[] = [];
+
+        unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
 
         // Get student's projects
+
         const projects = await projectsService.getStudentProjects(userId);
+
         const newUnsubscribeFunctions: (() => void)[] = [];
 
         let totalPendingForms = 0;
+
         let totalNewFeedback = 0;
 
         // Subscribe to forms for each project
+
         projects.forEach((project) => {
           const unsubscribeForms = formsService.subscribeToProjectForms(
             project.id,
+
             (forms) => {
               const pendingCount = forms.filter(
                 (form) => form.status === 'needs_revision'
@@ -64,11 +81,12 @@ const StudentDashboard: React.FC = () => {
               ).length;
 
               totalPendingForms += pendingCount;
+
               totalNewFeedback += feedbackCount;
 
               setPendingFormsCount(totalPendingForms);
+
               setNewFeedbackCount(totalNewFeedback);
-              unsubscribeFunctions.push(unsubscribeForms);
             }
           );
 
@@ -78,17 +96,15 @@ const StudentDashboard: React.FC = () => {
         setUnsubscribeFunctions(newUnsubscribeFunctions);
       } catch (error) {
         console.error('Error loading counts:', error);
+
         setPendingFormsCount(0);
+
         setNewFeedbackCount(0);
       }
     };
 
     loadCounts();
-
-    return () => {
-      unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
-    };
-  }, [authStatus.user?.uid]);
+  }, [authStatus.user?.uid, unsubscribeFunctions]);
 
   const renderContent = () => {
     switch (activeContent) {
