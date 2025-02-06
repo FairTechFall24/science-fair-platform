@@ -39,7 +39,7 @@ const StudentDashboard: React.FC = () => {
     const loadCounts = async () => {
       try {
         // Unsubscribe from existing subscriptions
-        unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
+        let unsubscribeFunctions: (() => void)[] = [];
 
         // Get student's projects
         const projects = await projectsService.getStudentProjects(userId);
@@ -68,6 +68,7 @@ const StudentDashboard: React.FC = () => {
 
               setPendingFormsCount(totalPendingForms);
               setNewFeedbackCount(totalNewFeedback);
+              unsubscribeFunctions.push(unsubscribeForms);
             }
           );
 
@@ -83,6 +84,10 @@ const StudentDashboard: React.FC = () => {
     };
 
     loadCounts();
+
+    return () => {
+      unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
+    };
   }, [authStatus.user?.uid]);
 
   const renderContent = () => {
