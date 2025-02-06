@@ -51,7 +51,7 @@ export const projectsService = {
     const q = query(
       projectsRef,
       where('memberIds', 'array-contains', studentId),
-      where('status', '!=', 'archived')
+      where('status', 'not-in', ['archived', 'pending_purge'])
     );
     const snapshot = await getDocs(q);
     return snapshot.empty;
@@ -193,16 +193,35 @@ export const projectsService = {
   },
 
   // Get a student's current project
-  async getStudentProject(studentId: string): Promise<Project | null> {
+  async getStudentProjects(studentId: string): Promise<Project[]> {
+    // Note the change to Project[]
     const projectsRef = collection(db, 'projects');
     const q = query(
       projectsRef,
       where('memberIds', 'array-contains', studentId),
-      where('status', '!=', 'archived')
+      where('status', 'not-in', ['archived', 'pending_purge'])
     );
     const snapshot = await getDocs(q);
 
+    if (snapshot.empty) return []; // Return an empty array if no projects are found
+
+    const projects: Project[] = snapshot.docs.map((doc) => convertProject(doc)); // Use map to convert all docs
+    return projects;
+  },
+
+  async getStudentProject(studentId: string): Promise<Project | null> {
+    const projectsRef = collection(db, 'projects');
+
+    const q = query(
+      projectsRef,
+      where('memberIds', 'array-contains', studentId),
+      where('status', 'not-in', ['archived', 'pending_purge'])
+    );
+
+    const snapshot = await getDocs(q);
+
     if (snapshot.empty) return null;
+
     return convertProject(snapshot.docs[0]);
   },
 
@@ -212,7 +231,7 @@ export const projectsService = {
     const q = query(
       projectsRef,
       where('projectCode', '==', projectCode),
-      where('status', '!=', 'archived')
+      where('status', 'not-in', ['archived', 'pending_purge'])
     );
     const snapshot = await getDocs(q);
 
@@ -266,7 +285,10 @@ export const projectsService = {
   // Subscribe to all projects
   subscribeToProjects(callback: (projects: Project[]) => void): () => void {
     const projectsRef = collection(db, 'projects');
-    const q = query(projectsRef, where('status', '!=', 'archived'));
+    const q = query(
+      projectsRef,
+      where('status', 'not-in', ['archived', 'pending_purge'])
+    );
 
     return onSnapshot(q, (snapshot) => {
       const projects = snapshot.docs.map(convertProject);
@@ -275,24 +297,20 @@ export const projectsService = {
   },
 
   // Subscribe to a student's project
-  subscribeToStudentProject(
-    studentId: string,
-    callback: (project: Project | null) => void
+  subscribeToStudentProjects(
+    uid: string,
+    callback: (projects: Project[]) => void // Expecting Project[]
   ): () => void {
     const projectsRef = collection(db, 'projects');
     const q = query(
       projectsRef,
-      where('memberIds', 'array-contains', studentId),
-      where('status', '!=', 'archived')
+      where('memberIds', 'array-contains', uid), // Filter by memberIds
+      where('status', 'not-in', ['archived', 'pending_purge'])
     );
 
     return onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        callback(null);
-        return;
-      }
-      const project = convertProject(snapshot.docs[0]);
-      callback(project);
+      const projects: Project[] = snapshot.docs.map(convertProject); // Convert all docs to Project[]
+      callback(projects); // Now passing Project[]
     });
   },
 
@@ -319,10 +337,10 @@ export const projectsService = {
 
     const timestamp = new Date();
 
-    // If no members left, archive the project
+    // If no members left, move the project to the trash bin to pend purging all data
     if (updatedMembers.length === 0) {
       await updateDoc(projectRef, {
-        status: 'archived',
+        status: 'pending_purge',
         updatedAt: Timestamp.fromDate(timestamp),
       });
     } else {
