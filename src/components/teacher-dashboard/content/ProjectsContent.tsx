@@ -34,12 +34,15 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  Trash2,
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { teacherService } from '../../../services/teacher.service';
 import { Project } from '../../../types/project.types';
 
 interface ProjectWithDetails extends Project {
+  id: string;
+  memberIds: [];
   students: {
     firstName: string;
     lastName: string;
@@ -58,6 +61,7 @@ const ProjectsContent: React.FC = () => {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
 
   useEffect(() => {
     const loadProjects = async () => {
@@ -101,6 +105,32 @@ const ProjectsContent: React.FC = () => {
     );
     return matchesName || matchesStudents;
   });
+
+  const handleRemoveProject = async () => {
+    //if teacher id or project id is null, return nothing
+    if (!authStatus.user?.uid || !selectedProject?.id) return;
+    try {
+      await teacherService.removeProjectandMembersFromClass(
+        authStatus.user.uid,
+        selectedProject.id,
+        selectedProject.memberIds
+      );
+      // // Refresh class data
+      // const updatedClass = await teacherService.getTeacherClass(
+      //   authStatus.user.uid
+      // );
+      // setClassData(updatedClass);
+      //Close dialog window
+      setConfirmRemoveOpen(false);
+      //reset selected project
+      setSelectedProject(null);
+
+      //Reload the page to update
+      window.location.reload();
+    } catch (err) {
+      setError('Failed to remove student');
+    }
+  };
 
   type ProjectStatus =
     | 'draft'
@@ -314,7 +344,34 @@ const ProjectsContent: React.FC = () => {
           <Users size={16} style={{ marginRight: 8 }} />
           Manage Team
         </MenuItem>
+        <MenuItem onClick={() => setConfirmRemoveOpen(true)}>
+          <Trash2 size={16} style={{ marginRight: 8 }} />
+          Remove Project
+        </MenuItem>
       </Menu>
+      {/* Confirm Remove Dialog */}
+      <Dialog
+        open={confirmRemoveOpen}
+        onClose={() => setConfirmRemoveOpen(false)}
+      >
+        <DialogTitle>Remove Student</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to remove the {selectedProject?.name} Project
+            and it's students from your class?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmRemoveOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleRemoveProject}
+            color="error"
+            variant="contained"
+          >
+            Remove Project & Students
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

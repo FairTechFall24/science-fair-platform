@@ -7,6 +7,7 @@ import JudgeSidebar, {
 } from '../components/judge-dashboard/Sidebar';
 import ProjectScoringList from '../components/judge-dashboard/content/ProjectScoringList';
 import ProjectScoringDialog from '../components/judge-dashboard/content/ProjectScoringDialog';
+import AccountSettings from '../components/judge-dashboard/content/AccountSettingsContent';
 import { judgingService } from '../services/judging.service';
 import { useAuth } from '../contexts/AuthContext';
 import { Project } from '../types/project.types';
@@ -58,6 +59,8 @@ const JudgeDashboard: React.FC = () => {
     switch (activeContent) {
       case 'scoring':
         return <ProjectScoringList onViewProject={handleViewProject} />;
+      case 'settings':
+        return <AccountSettings />;
       default:
         return null;
     }

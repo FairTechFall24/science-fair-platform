@@ -2,43 +2,45 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Button,
   Card,
   CardContent,
-  CircularProgress,
-  Alert,
+  Button,
+  Chip,
+  Divider,
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   IconButton,
-  Chip,
-  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
+  Alert,
+  Collapse,
 } from '@mui/material';
 import {
-  UserPlus,
-  Users,
-  LogOut,
-  Trash2,
-  FileText,
   School,
+  Users,
+  UserPlus,
+  LogOut,
+  FileText,
+  Trash2,
 } from 'lucide-react';
+import ProjectDocuments from './ProjectDocuments';
 import { useAuth } from '../../../contexts/AuthContext';
 import { projectsService } from '../../../services/projects.service';
 import { Project, ProjectMember } from '../../../types/project.types';
 import CreateProjectDialog from './CreateProjectDialog';
 import JoinProjectDialog from './JoinProjectDialog';
-import ProjectDocuments from './ProjectDocuments';
+import { KeyboardArrowUp, KeyboardArrowDown } from '@mui/icons-material';
 
 const ProjectsContent: React.FC = () => {
   const { authStatus } = useAuth();
-  const [project, setProject] = useState<Project | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedProject, setExpandedProject] = useState<string | null>(null);
 
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -49,17 +51,18 @@ const ProjectsContent: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<ProjectMember | null>(
     null
   );
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
     const uid = authStatus.user?.uid;
     if (!uid) return;
 
     setLoading(true);
-    // Subscribe to student's project
-    const unsubscribe = projectsService.subscribeToStudentProject(
+    // Subscribe to student's projects
+    const unsubscribe = projectsService.subscribeToStudentProjects(
       uid,
-      (updatedProject) => {
-        setProject(updatedProject);
+      (updatedProjects) => {
+        setProjects(updatedProjects);
         setLoading(false);
         setError(null);
       }
@@ -71,34 +74,46 @@ const ProjectsContent: React.FC = () => {
   const handleCreateProject = () => setCreateDialogOpen(true);
   const handleProjectCreated = () => setCreateDialogOpen(false);
   const handleJoinProject = () => setJoinDialogOpen(true);
-  const handleViewDocuments = () => setDocumentsDialogOpen(true);
+  const handleViewDocuments = (project: Project) => {
+    setSelectedProject(project);
+    setDocumentsDialogOpen(true);
+  };
 
   const handleLeaveProject = async () => {
-    if (!project || !authStatus.user?.uid) return;
+    if (!selectedProject || !authStatus.user?.uid) return;
 
     try {
-      await projectsService.removeMember(project.id, authStatus.user.uid);
+      await projectsService.removeMember(
+        selectedProject.id,
+        authStatus.user.uid
+      );
       setConfirmLeaveOpen(false);
+      setSelectedProject(null);
     } catch (err) {
       setError('Failed to leave project');
     }
   };
 
   const handleRemoveMember = async () => {
-    if (!project || !selectedMember) return;
+    if (!selectedProject || !selectedMember) return;
 
     try {
-      await projectsService.removeMember(project.id, selectedMember.userId);
+      await projectsService.removeMember(
+        selectedProject.id,
+        selectedMember.userId
+      );
       setConfirmRemoveOpen(false);
+      setSelectedMember(null);
     } catch (err) {
       setError('Failed to remove team member');
     }
   };
 
-  const isProjectCreator = project?.members.some(
-    (member) =>
-      member.userId === authStatus.user?.uid && member.role === 'creator'
-  );
+  const isProjectCreator = (project: Project) =>
+    project.members.some(
+      (member) =>
+        member.userId === authStatus.user?.uid && member.role === 'creator'
+    );
 
   if (loading) {
     return (
@@ -115,9 +130,27 @@ const ProjectsContent: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom color="primary" fontWeight="bold">
-        My Project
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h4" color="primary" fontWeight="bold">
+          My Projects
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="contained"
+            onClick={handleCreateProject}
+            startIcon={<Users />}
+          >
+            Create New Project
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleJoinProject}
+            startIcon={<UserPlus />}
+          >
+            Join Project
+          </Button>
+        </Box>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -125,7 +158,7 @@ const ProjectsContent: React.FC = () => {
         </Alert>
       )}
 
-      {!project ? (
+      {projects.length === 0 ? (
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
@@ -134,126 +167,149 @@ const ProjectsContent: React.FC = () => {
             <Typography color="text.secondary" paragraph>
               Create a new project or join an existing one using a project code.
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button
-                variant="contained"
-                onClick={handleCreateProject}
-                startIcon={<Users />}
-              >
-                Create New Project
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={handleJoinProject}
-                startIcon={<UserPlus />}
-              >
-                Join Project
-              </Button>
-            </Box>
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent>
-            <Box
-              sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}
-            >
-              <Box>
-                <Typography variant="h5">{project.name}</Typography>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Code: {project.projectCode}
-                </Typography>
-              </Box>
-              <Chip
-                label={
-                  project.fairType === 'highSchool'
-                    ? 'High School'
-                    : 'Middle School'
-                }
-                icon={<School size={16} />}
-                color="primary"
-              />
-            </Box>
-
-            <Divider sx={{ my: 2 }} />
-
-            <Typography variant="h6" gutterBottom>
-              Team Members
-            </Typography>
-            <List>
-              {project.members.map((member) => (
-                <ListItem key={member.userId}>
-                  <ListItemText
-                    primary={`${member.firstName} ${member.lastName}`}
-                    secondary={member.email}
-                    secondaryTypographyProps={{
-                      component: 'div',
-                    }}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {projects.map((project) => (
+            <Card key={project.id}>
+              <CardContent>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    mb: 2,
+                  }}
+                >
+                  <Box>
+                    <Typography variant="h5">{project.name}</Typography>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Code: {project.projectCode}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={
+                      project.fairType === 'highSchool'
+                        ? 'High School'
+                        : 'Middle School'
+                    }
+                    icon={<School size={16} />}
+                    color="primary"
                   />
-                  {member.role === 'creator' && (
-                    <Chip
-                      size="small"
-                      label="Creator"
-                      color="primary"
-                      sx={{ mr: 6 }}
-                    />
-                  )}
-                  {isProjectCreator &&
-                    member.userId !== authStatus.user?.uid && (
-                      <ListItemSecondaryAction>
-                        <IconButton
-                          edge="end"
-                          onClick={() => {
-                            setSelectedMember(member);
-                            setConfirmRemoveOpen(true);
-                          }}
-                        >
-                          <Trash2 size={18} />
-                        </IconButton>
-                      </ListItemSecondaryAction>
+                </Box>
+
+                <Box
+                  onClick={() =>
+                    setExpandedProject(
+                      expandedProject === project.id ? null : project.id //expands singular project
+                    )
+                  }
+                  sx={{ cursor: 'pointer' }}
+                >
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: 'flex', alignItems: 'center' }}
+                  >
+                    Project Info
+                    {expandedProject ? (
+                      <KeyboardArrowUp />
+                    ) : (
+                      <KeyboardArrowDown />
                     )}
-                </ListItem>
-              ))}
-            </List>
+                  </Typography>
+                </Box>
 
-            <Divider sx={{ my: 2 }} />
+                <Collapse in={expandedProject === project.id}>
+                  <List>
+                    <Divider sx={{ my: 2 }} />
 
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Adult Sponsor
-              </Typography>
-              <Typography>
-                {project.adultSponsor.name}
-                {project.adultSponsor.isTeacher && (
-                  <Chip size="small" label="Teacher" sx={{ ml: 1 }} />
-                )}
-              </Typography>
-              <Typography color="text.secondary">
-                {project.adultSponsor.email}
-              </Typography>
-            </Box>
+                    <Typography variant="h6" gutterBottom>
+                      Team Members
+                    </Typography>
 
-            <Box
-              sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}
-            >
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<LogOut />}
-                onClick={() => setConfirmLeaveOpen(true)}
-              >
-                Leave Project
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<FileText />}
-                onClick={handleViewDocuments}
-              >
-                Project Documents
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
+                    {project.members.map((member) => (
+                      <ListItem key={member.userId}>
+                        <ListItemText
+                          primary={`${member.firstName} ${member.lastName}`}
+                          secondary={member.email}
+                          secondaryTypographyProps={{
+                            component: 'div',
+                          }}
+                        />
+                        {member.role === 'creator' && (
+                          <Chip
+                            size="small"
+                            label="Creator"
+                            color="primary"
+                            sx={{ mr: 6 }}
+                          />
+                        )}
+                        {isProjectCreator(project) &&
+                          member.userId !== authStatus.user?.uid && (
+                            <IconButton
+                              edge="end"
+                              onClick={() => {
+                                setSelectedProject(project);
+                                setSelectedMember(member);
+                                setConfirmRemoveOpen(true);
+                              }}
+                            >
+                              <Trash2 size={18} />
+                            </IconButton>
+                          )}
+                      </ListItem>
+                    ))}
+                  </List>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Adult Sponsor
+                    </Typography>
+                    <Typography>
+                      {project.adultSponsor.name}
+                      {project.adultSponsor.isTeacher && (
+                        <Chip size="small" label="Teacher" sx={{ ml: 1 }} />
+                      )}
+                    </Typography>
+                    <Typography color="text.secondary">
+                      {project.adultSponsor.email}
+                    </Typography>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      mt: 4,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={<LogOut />}
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setConfirmLeaveOpen(true);
+                      }}
+                    >
+                      Leave Project
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<FileText />}
+                      onClick={() => handleViewDocuments(project)}
+                    >
+                      Project Documents
+                    </Button>
+                  </Box>
+                </Collapse>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
       )}
 
       {/* Dialogs */}
@@ -269,30 +325,43 @@ const ProjectsContent: React.FC = () => {
         onProjectJoined={handleProjectCreated}
       />
 
-      {project && (
+      {selectedProject && (
         <>
           <ProjectDocuments
             open={documentsDialogOpen}
-            onClose={() => setDocumentsDialogOpen(false)}
-            projectId={project.id}
-            projectName={project.name}
-            projectMembers={project.members}
+            onClose={() => {
+              setDocumentsDialogOpen(false);
+              setSelectedProject(null);
+            }}
+            projectId={selectedProject.id}
+            projectName={selectedProject.name}
+            projectMembers={selectedProject.members}
           />
 
           <Dialog
             open={confirmLeaveOpen}
-            onClose={() => setConfirmLeaveOpen(false)}
+            onClose={() => {
+              setConfirmLeaveOpen(false);
+              setSelectedProject(null);
+            }}
           >
             <DialogTitle>Leave Project?</DialogTitle>
             <DialogContent>
               <Typography>
                 Are you sure you want to leave this project?
-                {isProjectCreator &&
+                {isProjectCreator(selectedProject) &&
                   ' As the creator, leaving will delete the project if no other members remain.'}
               </Typography>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setConfirmLeaveOpen(false)}>Cancel</Button>
+              <Button
+                onClick={() => {
+                  setConfirmLeaveOpen(false);
+                  setSelectedProject(null);
+                }}
+              >
+                Cancel
+              </Button>
               <Button
                 onClick={handleLeaveProject}
                 color="error"
@@ -305,7 +374,11 @@ const ProjectsContent: React.FC = () => {
 
           <Dialog
             open={confirmRemoveOpen}
-            onClose={() => setConfirmRemoveOpen(false)}
+            onClose={() => {
+              setConfirmRemoveOpen(false);
+              setSelectedMember(null);
+              setSelectedProject(null);
+            }}
           >
             <DialogTitle>Remove Team Member?</DialogTitle>
             <DialogContent>
@@ -315,7 +388,13 @@ const ProjectsContent: React.FC = () => {
               </Typography>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setConfirmRemoveOpen(false)}>
+              <Button
+                onClick={() => {
+                  setConfirmRemoveOpen(false);
+                  setSelectedMember(null);
+                  setSelectedProject(null);
+                }}
+              >
                 Cancel
               </Button>
               <Button
@@ -323,7 +402,7 @@ const ProjectsContent: React.FC = () => {
                 color="error"
                 variant="contained"
               >
-                Remove Member
+                Remove
               </Button>
             </DialogActions>
           </Dialog>

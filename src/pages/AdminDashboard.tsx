@@ -7,6 +7,7 @@ import ProjectReviewList from '../components/admin-dashboard/ProjectReviewList';
 import ProjectReviewDialog from '../components/admin-dashboard/ProjectReviewDialog';
 import StudentsList from '../components/admin-dashboard/students/StudentsList';
 import StudentDetails from '../components/admin-dashboard/students/StudentDetails';
+import AccountSettings from '../components/admin-dashboard/AccountSettingsContent';
 import { useAuth } from '../contexts/AuthContext';
 import { projectsService } from '../services/projects.service';
 import { projectFormsService } from '../services/project-forms.service';
@@ -187,7 +188,7 @@ const AdminDashboard: React.FC = () => {
       case 'students':
         return <StudentsList onViewStudent={handleViewStudent} />;
       case 'settings':
-        return <div>Settings Content</div>;
+        return <AccountSettings />;
       default:
         return null;
     }

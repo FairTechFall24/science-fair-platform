@@ -14,13 +14,34 @@ const StudentDashboard: React.FC = () => {
   const [activeContent, setActiveContent] = useState<ContentType>('projects');
   const [pendingFormsCount, setPendingFormsCount] = useState<number>(0);
   const [newFeedbackCount, setNewFeedbackCount] = useState<number>(0);
+  const [unsubscribeFunctions, setUnsubscribeFunctions] = useState<
+    (() => void)[]
+  >([]);
   const { authStatus } = useAuth();
 
   useEffect(() => {
+    // Cleanup function to unsubscribe from all subscriptions
+    return () => {
+      unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [unsubscribeFunctions]);
+
+  useEffect(() => {
+    // Cleanup function to unsubscribe from all subscriptions
+
+    return () => {
+      unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [unsubscribeFunctions]);
+
+  useEffect(() => {
     // Early return if there's no authenticated user
+
     if (!authStatus.user?.uid) {
       setPendingFormsCount(0);
+
       setNewFeedbackCount(0);
+
       return;
     }
 
@@ -28,44 +49,62 @@ const StudentDashboard: React.FC = () => {
 
     const loadCounts = async () => {
       try {
-        // Get student's project
-        const project = await projectsService.getStudentProject(userId);
+        // Unsubscribe from existing subscriptions
 
-        if (project) {
-          // Subscribe to forms
+        unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
+
+        // Get student's projects
+
+        const projects = await projectsService.getStudentProjects(userId);
+
+        const newUnsubscribeFunctions: (() => void)[] = [];
+
+        let totalPendingForms = 0;
+
+        let totalNewFeedback = 0;
+
+        // Subscribe to forms for each project
+
+        projects.forEach((project) => {
           const unsubscribeForms = formsService.subscribeToProjectForms(
             project.id,
+
             (forms) => {
-              // Count forms that need attention (need revision or new feedback)
               const pendingCount = forms.filter(
                 (form) => form.status === 'needs_revision'
               ).length;
-              setPendingFormsCount(pendingCount);
 
-              // Count forms with new feedback (forms in review or with recent reviews)
-              const newFeedbackCount = forms.filter(
+              const feedbackCount = forms.filter(
                 (form) =>
                   form.status === 'in_review' ||
                   form.versions[form.currentVersion].reviews.length > 0
               ).length;
 
-              setNewFeedbackCount(newFeedbackCount);
+              totalPendingForms += pendingCount;
+
+              totalNewFeedback += feedbackCount;
+
+              setPendingFormsCount(totalPendingForms);
+
+              setNewFeedbackCount(totalNewFeedback);
             }
           );
 
-          return () => {
-            unsubscribeForms();
-          };
-        }
+          newUnsubscribeFunctions.push(unsubscribeForms);
+        });
+
+        setUnsubscribeFunctions(newUnsubscribeFunctions);
       } catch (error) {
         console.error('Error loading counts:', error);
+
         setPendingFormsCount(0);
+
         setNewFeedbackCount(0);
       }
     };
 
     loadCounts();
-  }, [authStatus.user?.uid]);
+  }, [authStatus.user?.uid, unsubscribeFunctions]);
 
   const renderContent = () => {
     switch (activeContent) {
