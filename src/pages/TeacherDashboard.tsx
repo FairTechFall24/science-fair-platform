@@ -3,6 +3,7 @@ import { Box, Container } from '@mui/material';
 import Sidebar from '../components/teacher-dashboard/Sidebar';
 import ClassContent from '../components/teacher-dashboard/content/ClassContent';
 import ProjectsContent from '../components/teacher-dashboard/content/ProjectsContent';
+import AccountSettings from '../components/teacher-dashboard/content/AccountSettingsContent';
 import { TeacherContentType } from '../types/teacher.types';
 import { useAuth } from '../contexts/AuthContext';
 import { teacherService } from '../services/teacher.service';
@@ -37,6 +38,8 @@ const TeacherDashboard: React.FC = () => {
         return <ClassContent />;
       case 'projects':
         return <ProjectsContent />;
+      case 'settings':
+        return <AccountSettings />;
       default:
         return null;
     }

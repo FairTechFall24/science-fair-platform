@@ -21,6 +21,7 @@ export interface StudentInClass {
 
 export interface ProjectInClass {
   projectId: string;
+  memberIds: [];
   projectName: string;
   students: string[]; // Array of student IDs
   createdAt: Date;

@@ -6,6 +6,7 @@ export type ProjectStatus =
   | 'archived'
   | 'pending'
   | 'approved'
+  | 'pending_purge'
   | 'rejected'
   | 'in_review'
   | 'needs_revision';

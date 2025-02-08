@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import VolunteerSidebar, {
   VolunteerContentType,
 } from '../components/volunteer-dashboard/Sidebar';
+import AccountSettings from '../components/volunteer-dashboard/content/AccountSettingsContent';
 
 const VolunteerDashboard: React.FC = () => {
   const [activeContent, setActiveContent] =
@@ -89,33 +90,7 @@ const VolunteerDashboard: React.FC = () => {
           </Box>
         );
       case 'settings':
-        return (
-          <Box>
-            <Box sx={{ mb: 4 }}>
-              <Typography
-                variant="h4"
-                gutterBottom
-                color="primary"
-                fontWeight="bold"
-              >
-                Settings
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Manage your account settings and preferences
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                backgroundColor: 'background.paper',
-                borderRadius: '12px',
-                boxShadow: 1,
-                p: 3,
-              }}
-            >
-              <p>Settings options will go here</p>
-            </Box>
-          </Box>
-        );
+        return <AccountSettings />;
       default:
         return null;
     }

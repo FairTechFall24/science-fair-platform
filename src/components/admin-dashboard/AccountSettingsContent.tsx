@@ -12,20 +12,28 @@ import {
   DialogContentText,
 } from '@mui/material';
 import { UserRoundX, UserRoundPen } from 'lucide-react';
-import { useAuth } from '../../../contexts/AuthContext';
-import { UserProfile, StudentProfile } from '../../../types/auth.types';
-import { studentsService } from '../../../services/students.service';
+import { useAuth } from '../../contexts/AuthContext';
+import { usersService } from '../../services/users.service';
 
 const AccountSettingsContent: React.FC = () => {
   const { authStatus } = useAuth();
   const userData = authStatus.metadata || {};
   const [deletionDialogOpen, setDeletionDialogOpen] = useState(false);
 
-  // Type guard for checking if metadata contains student-specific fields
-  const hasStudentData = (
-    data: Partial<UserProfile>
-  ): data is Partial<StudentProfile> => {
-    return data?.userType === 'student';
+  const deleteAccount = async (): Promise<void> => {
+    //Close Dialog Window
+    setDeletionDialogOpen(false);
+    //If user is authenticated, allow the user to delete their account and other data
+    if (authStatus.user) {
+      await usersService.deleteUserAccount(authStatus.user.uid);
+      //Reload the page to send user back to login screen
+      window.location.reload();
+    }
+  };
+
+  const openConfirmDeletionDialog = () => {
+    //Opens up dialog window to confirm user wants to delete their account & data
+    setDeletionDialogOpen(true);
   };
 
   //format phone number for readability
@@ -42,52 +50,6 @@ const AccountSettingsContent: React.FC = () => {
     //Return original if match failed (not correct amount of digits)
     return phoneNumber;
   }
-
-  const deleteAccount = async (): Promise<void> => {
-    //Close Dialog Window
-    setDeletionDialogOpen(false);
-    //If user is authenticated, allow the user to delete their account and other data
-    if (authStatus.user) {
-      await studentsService.deleteStudentAccount(authStatus.user.uid);
-      //Reload the page to send user back to login screen
-      window.location.reload();
-    }
-  };
-
-  const openConfirmDeletionDialog = () => {
-    //Opens up dialog window to confirm user wants to delete their account & data
-    setDeletionDialogOpen(true);
-  };
-
-  const renderProfileSpecificFields = () => {
-    if (hasStudentData(userData)) {
-      return (
-        <>
-          {userData.school !== undefined && (
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="School"
-                value={userData.school}
-                disabled
-              />
-            </Grid>
-          )}
-          {userData.grade !== undefined && (
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Grade"
-                value={userData.grade}
-                disabled
-              />
-            </Grid>
-          )}
-        </>
-      );
-    }
-    return null;
-  };
 
   return (
     <Box sx={{ maxWidth: 800 }}>
@@ -130,7 +92,6 @@ const AccountSettingsContent: React.FC = () => {
               />
             </Grid>
           )}
-          {renderProfileSpecificFields()}
           <Grid item xs={12}>
             <Button
               variant="contained"
@@ -164,7 +125,7 @@ const AccountSettingsContent: React.FC = () => {
           <Box>
             <Typography>
               Are you sure you want to delete your account? <br /> This cannot
-              be undone and you will lose all projects & paperwork progress.
+              be undone and you will lose all progress.
             </Typography>
           </Box>
         </DialogContentText>

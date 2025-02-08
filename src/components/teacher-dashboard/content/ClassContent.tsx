@@ -9,21 +9,13 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Alert,
   CircularProgress,
-  Tooltip,
 } from '@mui/material';
-import { Copy, AlertCircle, Trash2, School } from 'lucide-react';
+import { Copy, AlertCircle, School } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { teacherService } from '../../../services/teacher.service';
 import {
-  StudentInClass,
   TeacherClass,
   TeacherDashboardStats,
 } from '../../../types/teacher.types';
@@ -34,10 +26,6 @@ const ClassContent: React.FC = () => {
   const [stats, setStats] = useState<TeacherDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStudent, setSelectedStudent] = useState<StudentInClass | null>(
-    null
-  );
-  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
@@ -69,28 +57,6 @@ const ClassContent: React.FC = () => {
       navigator.clipboard.writeText(authStatus.metadata.classCode);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
-    }
-  };
-
-  const handleRemoveStudent = async () => {
-    if (!selectedStudent || !authStatus.user?.uid) return;
-
-    try {
-      await teacherService.removeStudentFromClass(
-        authStatus.user.uid,
-        selectedStudent.userId
-      );
-
-      // Refresh class data
-      const updatedClass = await teacherService.getTeacherClass(
-        authStatus.user.uid
-      );
-      setClassData(updatedClass);
-
-      setConfirmRemoveOpen(false);
-      setSelectedStudent(null);
-    } catch (err) {
-      setError('Failed to remove student');
     }
   };
 
@@ -202,19 +168,6 @@ const ClassContent: React.FC = () => {
                     primary={`${student.firstName} ${student.lastName}`}
                     secondary={student.email}
                   />
-                  <ListItemSecondaryAction>
-                    <Tooltip title="Remove student">
-                      <IconButton
-                        edge="end"
-                        onClick={() => {
-                          setSelectedStudent(student);
-                          setConfirmRemoveOpen(true);
-                        }}
-                      >
-                        <Trash2 size={18} />
-                      </IconButton>
-                    </Tooltip>
-                  </ListItemSecondaryAction>
                 </ListItem>
               ))
             ) : (
@@ -233,30 +186,6 @@ const ClassContent: React.FC = () => {
           </List>
         </CardContent>
       </Card>
-
-      {/* Confirm Remove Dialog */}
-      <Dialog
-        open={confirmRemoveOpen}
-        onClose={() => setConfirmRemoveOpen(false)}
-      >
-        <DialogTitle>Remove Student</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove {selectedStudent?.firstName}{' '}
-            {selectedStudent?.lastName} from your class?
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmRemoveOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleRemoveStudent}
-            color="error"
-            variant="contained"
-          >
-            Remove Student
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

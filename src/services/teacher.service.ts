@@ -10,6 +10,9 @@ import {
   updateDoc,
   Timestamp,
   arrayUnion,
+  //deleteDoc,
+  deleteField,
+  deleteDoc,
 } from 'firebase/firestore';
 import {
   Teacher,
@@ -18,6 +21,7 @@ import {
   TeacherDashboardStats,
   ProjectInClass,
 } from '../types/teacher.types';
+//import { projectsService } from './projects.service';
 
 // Helper function to generate a unique class code
 const generateClassCode = (): string => {
@@ -215,6 +219,42 @@ export const teacherService = {
     });
   },
 
+  // Remove project from class
+  async removeProjectandMembersFromClass(
+    teacherId: string,
+    projectId: string,
+    memberIds: []
+  ): Promise<void> {
+    try {
+      //Remove Project from teacher interface class
+      await teacherService.removeProjectFromClass(teacherId, projectId);
+      console.log('Project successfully removed from class');
+    } catch (error) {
+      console.error('Error removing project from class:', error);
+    }
+
+    try {
+      //Loop through each member in the project and remove them from teacher interface class
+      for (let i = 0; i < memberIds.length; i++) {
+        await teacherService.removeStudentFromClass(teacherId, memberIds[i]);
+      }
+      console.log('Students successfully removed from class');
+    } catch (error) {
+      console.error('Error removing students from class:', error);
+    }
+
+    //Delete classId field from the project document (aka project is not in the class)
+    try {
+      const projectRef = doc(db, 'projects', projectId);
+      await updateDoc(projectRef, {
+        classId: deleteField(),
+      });
+      console.log("Field 'classId' successfully deleted from document");
+    } catch (error) {
+      console.error("Error deleting field 'classId' from document:", error);
+    }
+  },
+
   // Get all students in class
   async getClassStudents(teacherId: string): Promise<StudentInClass[]> {
     const classDoc = await this.getTeacherClass(teacherId);
@@ -252,5 +292,32 @@ export const teacherService = {
       id: projectDoc.id,
       students,
     };
+  },
+
+  //Delete teacher user document and remove class codes from projects
+  async deleteTeacherAccount(teacherId: string) {
+    try {
+      //Collect all projects in the teacher's class
+      const projects = await teacherService.getClassProjects(teacherId);
+
+      //Loop through each project(s) and delete the 'classId' field from the project document
+      for (let i = 0; i < projects.length; i++) {
+        const projectRef = doc(db, 'projects', projects[i].projectId);
+        await updateDoc(projectRef, {
+          classId: deleteField(),
+        });
+      }
+    } catch (error) {
+      console.error('Error removing classId from project document(s):', error);
+      throw error;
+    }
+
+    try {
+      //delete the teacher's document
+      await deleteDoc(doc(db, 'users', teacherId));
+    } catch (error) {
+      console.error('Error deleting teacher user document:', error);
+      throw error;
+    }
   },
 };

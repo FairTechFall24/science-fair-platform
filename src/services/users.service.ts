@@ -10,6 +10,7 @@ import {
   getDocs,
   QueryConstraint,
   DocumentData,
+  deleteDoc,
 } from 'firebase/firestore';
 import { UserRole } from '../types/auth.types';
 
@@ -134,6 +135,17 @@ export const usersService = {
       console.log('User role updated successfully');
     } catch (error) {
       console.error('Error updating user role:', error);
+    }
+  },
+
+  //delete user document
+  async deleteUserAccount(userId: string) {
+    try {
+      //delete the teacher's document
+      await deleteDoc(doc(db, 'users', userId));
+    } catch (error) {
+      console.error('Error deleting user document:', error);
+      throw error;
     }
   },
 };

@@ -7,8 +7,11 @@ import {
   getDocs,
   QuerySnapshot,
   DocumentData,
+  deleteDoc,
+  doc,
 } from 'firebase/firestore';
 import { Student } from '../types/student.types';
+import { projectsService } from '../services/projects.service';
 import { FormSubmission } from '../types/forms.types';
 
 // Helper function to get form statistics
@@ -153,5 +156,28 @@ export const studentsService = {
 
     const studentsPromises = snapshot.docs.map(convertToStudent);
     return Promise.all(studentsPromises);
+  },
+
+  //Deletes all data from a students account including removing them from any projects
+  async deleteStudentAccount(studentId: string) {
+    try {
+      //Collect all projects where the student is a member
+      const projects = await projectsService.getStudentProjects(studentId);
+      //Loop through each project(s) and remove the user from the project (set status to pending_purge if only member on project)
+      for (let i = 0; i < projects.length; i++) {
+        await projectsService.removeMember(projects[i].id, studentId);
+      }
+    } catch (error) {
+      console.error('Error removing student from project document(s):', error);
+      throw error;
+    }
+
+    try {
+      //delete the student's document
+      await deleteDoc(doc(db, 'users', studentId));
+    } catch (error) {
+      console.error('Error deleting student user document:', error);
+      throw error;
+    }
   },
 };
