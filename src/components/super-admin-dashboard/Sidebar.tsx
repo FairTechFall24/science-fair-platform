@@ -9,7 +9,7 @@ import {
   Typography,
   Divider,
 } from '@mui/material';
-import { Users, BarChart2, Settings } from 'lucide-react';
+import { Users, BarChart2, Settings, BookText } from 'lucide-react';
 import LogoutButton from '../LogoutButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { SuperAdminContentType } from '../../types/superAdmin.types';
@@ -28,6 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     { id: 'users' as const, label: 'User Management', icon: Users },
+    { id: 'forms' as const, label: 'Form Management', icon: BookText },
     { id: 'analytics' as const, label: 'Analytics', icon: BarChart2 },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
   ];
