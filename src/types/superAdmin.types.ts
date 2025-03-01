@@ -1,4 +1,4 @@
-export type SuperAdminContentType = 'users' | 'analytics' | 'settings';
+export type SuperAdminContentType = 'users' | 'analytics' | 'settings' | 'category';
 
 export interface UserAnalytics {
   total: number;

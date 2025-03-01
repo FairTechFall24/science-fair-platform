@@ -14,7 +14,7 @@ import { FileBadge, Settings, UserCircle } from 'lucide-react';
 import LogoutButton from '../LogoutButton';
 import { useAuth } from '../../contexts/AuthContext';
 
-export type JudgeContentType = 'scoring' | 'profile' | 'settings';
+export type JudgeContentType = 'scoring' | 'profile' | 'settings' | 'projects';
 
 interface SidebarProps {
   activeContent: JudgeContentType;
