@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Container } from '@mui/material';
 import Sidebar from '../components/super-admin-dashboard/Sidebar';
 import UserManagement from '../components/super-admin-dashboard/UserManagement';
+import CategoriesManagement from '../components/super-admin-dashboard/CategoriesManagement';
 import Analytics from '../components/super-admin-dashboard/Analytics';
 import Settings from '../components/super-admin-dashboard/Settings';
 import { SuperAdminContentType } from '../types/superAdmin.types';
@@ -18,6 +19,8 @@ const SuperAdminDashboard: React.FC = () => {
         return <Analytics />;
       case 'settings':
         return <Settings />;
+      case 'category':
+        return <CategoriesManagement />;
       default:
         return null;
     }

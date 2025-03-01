@@ -13,6 +13,7 @@ import { Users, BarChart2, Settings } from 'lucide-react';
 import LogoutButton from '../LogoutButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { SuperAdminContentType } from '../../types/superAdmin.types';
+import { ListSharp } from '@mui/icons-material';
 
 interface SidebarProps {
   activeContent: SuperAdminContentType;
@@ -30,6 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'users' as const, label: 'User Management', icon: Users },
     { id: 'analytics' as const, label: 'Analytics', icon: BarChart2 },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
+    { id: 'category' as const, label: 'Category Management', icon: ListSharp},
   ];
 
   return (
